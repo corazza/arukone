@@ -51,8 +51,45 @@
     </div>
 
     <script>
-        function getCellId(i, j) {
-            return `cell-${i}-${j}`;
+        $(document).ready(initialize);
+
+        function initialize() {
+            for (let i = 0; i < puzzle.length; ++i) {
+                $('#odabirIgre').append(`<option value="${i}">${puzzle[i].name}</option>`);
+            }
+
+            const btn = $('#zapocni');
+            btn.on('click', startGame);
+
+            startGame();
+        }
+
+        function startGame() {
+            const chosen_puzzle_i = $("#odabirIgre option:selected").val();
+            const chosen_puzzle = puzzle[chosen_puzzle_i];
+            const current_state = buildState(chosen_puzzle);
+
+            resetTable(chosen_puzzle);
+            resetColorSelector(chosen_puzzle.color, current_state.currentColor);
+            colorTable(chosen_puzzle, current_state);
+
+            // listeneri postavljeni ovdje da se kontekst ne bi provlacio kroz razne closure
+            $('#igra').off('mousedown', 'td');
+            $('#igra').on('mousedown', 'td', function (event) {
+                const cell = $(this);
+                clickedCell(event.button, cell.data('i'), cell.data('j'), chosen_puzzle, current_state);
+            });
+
+            $('#igra').off('contextmenu', 'td');
+            $('#igra').on('contextmenu', 'td', function () { return false; });
+
+            $('input[name="boja"]').off('change');
+            $('input[name="boja"]').change(function () {
+                current_state.currentColor = $(this).val();
+            });
+
+            $('#wonMessage').hide();
+            $('#igra').show();
         }
 
         function resetTable(puzzle) {
@@ -221,47 +258,10 @@
             return current_state;
         }
 
-        function startGame() {
-            const chosen_puzzle_i = $("#odabirIgre option:selected").val();
-            const chosen_puzzle = puzzle[chosen_puzzle_i];
-            const current_state = buildState(chosen_puzzle);
-
-            resetTable(chosen_puzzle);
-            resetColorSelector(chosen_puzzle.color, current_state.currentColor);
-            colorTable(chosen_puzzle, current_state);
-
-            // listeneri postavljeni ovdje da se kontekst ne bi provlacio kroz razne closure
-            $('#igra').off('mousedown', 'td');
-            $('#igra').on('mousedown', 'td', function (event) {
-                const cell = $(this);
-                clickedCell(event.button, cell.data('i'), cell.data('j'), chosen_puzzle, current_state);
-            });
-
-            $('#igra').off('contextmenu', 'td');
-            $('#igra').on('contextmenu', 'td', function () { return false; });
-
-            $('input[name="boja"]').off('change');
-            $('input[name="boja"]').change(function () {
-                current_state.currentColor = $(this).val();
-            });
-
-            $('#wonMessage').hide();
-            $('#igra').show();
+        function getCellId(i, j) {
+            return `cell-${i}-${j}`;
         }
-
-        function initialize() {
-            for (let i = 0; i < puzzle.length; ++i) {
-                $('#odabirIgre').append(`<option value="${i}">${puzzle[i].name}</option>`);
-            }
-
-            const btn = $('#zapocni');
-            btn.on('click', startGame);
-
-            startGame();
-        }
-
-        $(document).ready(initialize);
-    </script>
+</script>
 
 </body>
 
