@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf8" />
+    <title>Arukone</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <script src="https://rp2.studenti.math.hr/~zbujanov/dz3/puzzle.js"></script>
+    <style type="text/css">
+        table {
+            border: 1px solid grey;
+            border-collapse: collapse;
+            user-select: none;
+        }
+
+        td {
+            border: 1px solid grey;
+            width: 4em;
+            height: 4em;
+            text-align: center;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 1em;
+        }
+
+        #wonMessage {
+            font-size: larger;
+        }
+    </style>
+</head>
+
+<body>
+    <select id="odabirIgre">
+    </select>
+
+    <input type="button" id="zapocni" value="Zapocni" />
+
+    <br />
+    <br />
+
+    <p id="wonMessage">You won!</p>
+
+    <table id='igra'></table>
+
+    <br />
+
+    <div id="odabirBoje">
+        Odaberi boju za igranje:
+    </div>
+
+    <script>
+        function getCellId(i, j) {
+            return `cell-${i}-${j}`;
+        }
+
+        function resetTable(puzzle) {
+            const table = $('#igra');
+
+            table.empty();
+
+            for (let i = 0; i < puzzle.size; ++i) {
+                let row = $('<tr>');
+                for (let j = 0; j < puzzle.size; ++j) {
+                    let id = getCellId(i, j);
+                    let cell = $('<td>')
+                        .data('i', i).data('j', j).prop({ id: id });
+                    for (let k = 0; k < puzzle.color.length; ++k) {
+                        if (puzzle.A_row[k] - 1 === i && puzzle.A_col[k] - 1 === j ||
+                            puzzle.B_row[k] - 1 === i && puzzle.B_col[k] - 1 === j) {
+                            cell.append('X');
+                        }
+                    }
+                    row.append(cell);
+                }
+                table.append(row);
+            }
+        }
+
+        function resetColorSelector(colors, current_color) {
+            $('#odabirBoje').empty();
+            for (let value of colors) {
+                $('#odabirBoje').append(
+                    $('<input>').prop({
+                        type: 'radio',
+                        name: 'boja',
+                        id: `boja-${value}`,
+                        value: value,
+                        checked: value === current_color,
+                    })
+                ).append(
+                    $('<label>').prop({
+                        for: value,
+                        id: `boja-${value}-label`,
+                    }).html(value)
+                )
+            }
+        }
+
+        function colorTable(puzzle, current_state) {
+            for (let i = 0; i < puzzle.size; ++i) {
+                for (let j = 0; j < puzzle.size; ++j) {
+                    const id = getCellId(i, j);
+                    $(`#${id}`).css('background-color', current_state.fields[i][j]);
+                }
+            }
+        }
+
+        function clickedCell(button, i, j, puzzle, current_state) {
+            for (let k = 0; k < puzzle.color.length; ++k) {
+                if (puzzle.A_row[k] - 1 === i && puzzle.A_col[k] - 1 === j ||
+                    puzzle.B_row[k] - 1 === i && puzzle.B_col[k] - 1 === j) {
+                    return;
+                }
+            }
+
+            if (button === 0) {
+                current_state.fields[i][j] = current_state.currentColor;
+            } else if (button === 2) {
+                current_state.fields[i][j] = 'lightgrey';
+            }
+
+            colorTable(puzzle, current_state);
+
+            if (hasWon(puzzle, current_state)) {
+                handleWin();
+            }
+            underlineDonePaths(puzzle, current_state);
+        }
+
+        function handleWin() {
+            $('#igra').hide();
+            $('#wonMessage').show();
+        }
+
+        function hasPath(i1, j1, i2, j2, current_state) {
+            const visited = []
+            const to_visit = [[i1, j1]];
+            const color = current_state.fields[i1][j1];
+
+            for (let i = 0; i < current_state.fields.length; ++i) {
+                visited[i] = [];
+            }
+
+            while (to_visit.length > 0) {
+                const visiting = to_visit.pop();
+                const i = visiting[0];
+                const j = visiting[1];
+
+                if (i2 === i && j2 === j) {
+                    return true;
+                }
+
+                visited[i][j] = true;
+
+                if (i > 0 && visited[i - 1][j] !== true &&
+                    current_state.fields[i - 1][j] === color) {
+                    to_visit.push([i - 1, j])
+                }
+                if (i + 1 < current_state.fields.length && visited[i + 1][j] !== true &&
+                    current_state.fields[i + 1][j] === color) {
+                    to_visit.push([i + 1, j]);
+                }
+                if (j > 0 && visited[i][j - 1] !== true &&
+                    current_state.fields[i][j - 1] === color) {
+                    to_visit.push([i, j - 1])
+                }
+                if (j + 1 < current_state.fields.length && visited[i][j + 1] !== true &&
+                    current_state.fields[i][j + 1] === color) {
+                    to_visit.push([i, j + 1]);
+                }
+            }
+
+            return false;
+        }
+
+        function hasWon(puzzle, current_state) {
+            let win = true;
+            for (let k = 0; k < puzzle.color.length; ++k) {
+                win = win && hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
+                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state);
+            }
+            return win;
+        }
+
+        function underlineDonePaths(puzzle, current_state) {
+            let win = true;
+            for (let k = 0; k < puzzle.color.length; ++k) {
+                if (hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
+                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state)) {
+                    $(`#boja-${puzzle.color[k]}-label`).css({
+                        'text-decoration': 'underline',
+                    });
+                } else {
+                    $(`#boja-${puzzle.color[k]}-label`).css({
+                        'text-decoration': 'none',
+                    });
+                }
+            }
+            return win;
+        }
+
+        function buildState(puzzle) {
+            const current_state = {
+                fields: [],
+                currentColor: puzzle.color[0],
+            };
+
+            for (let i = 0; i < puzzle.size; ++i) {
+                current_state.fields[i] = [];
+                for (let j = 0; j < puzzle.size; ++j) {
+                    current_state.fields[i][j] = "lightgrey";
+                }
+            }
+
+            for (let i = 0; i < puzzle.color.length; ++i) {
+                current_state.fields[puzzle.A_row[i] - 1][puzzle.A_col[i] - 1] = puzzle.color[i];
+                current_state.fields[puzzle.B_row[i] - 1][puzzle.B_col[i] - 1] = puzzle.color[i];
+            }
+
+            return current_state;
+        }
+
+        function startGame() {
+            const chosen_puzzle_i = $("#odabirIgre option:selected").val();
+            const chosen_puzzle = puzzle[chosen_puzzle_i];
+            const current_state = buildState(chosen_puzzle);
+
+            resetTable(chosen_puzzle);
+            resetColorSelector(chosen_puzzle.color, current_state.currentColor);
+            colorTable(chosen_puzzle, current_state);
+
+            // listeneri postavljeni ovdje da se kontekst ne bi provlacio kroz razne closure
+            $('#igra').off('mousedown', 'td');
+            $('#igra').on('mousedown', 'td', function (event) {
+                const cell = $(this);
+                clickedCell(event.button, cell.data('i'), cell.data('j'), chosen_puzzle, current_state);
+            });
+
+            $('#igra').off('contextmenu', 'td');
+            $('#igra').on('contextmenu', 'td', function () { return false; });
+
+            $('input[name="boja"]').off('change');
+            $('input[name="boja"]').change(function () {
+                current_state.currentColor = $(this).val();
+            });
+
+            $('#wonMessage').hide();
+            $('#igra').show();
+        }
+
+        function initialize() {
+            for (let i = 0; i < puzzle.length; ++i) {
+                $('#odabirIgre').append(`<option value="${i}">${puzzle[i].name}</option>`);
+            }
+
+            const btn = $('#zapocni');
+            btn.on('click', startGame);
+
+            startGame();
+        }
+
+        $(document).ready(initialize);
+    </script>
+
+</body>
+
+</html>
