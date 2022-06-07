@@ -46,9 +46,10 @@
 
     <br />
 
-    <div id="odabirBoje">
-        Odaberi boju za igranje:
-    </div>
+    Odabir boje za igranje:
+
+    <span id="odabirBoje">
+    </span>
 
     <script>
         $(document).ready(initialize);
@@ -72,6 +73,7 @@
             resetTable(chosen_puzzle);
             resetColorSelector(chosen_puzzle.color, current_state.currentColor);
             colorTable(chosen_puzzle, current_state);
+            showGame();
 
             // listeneri postavljeni ovdje da se kontekst ne bi provlacio kroz razne closure
             $('#igra').off('mousedown', 'td');
@@ -87,9 +89,50 @@
             $('input[name="boja"]').change(function () {
                 current_state.currentColor = $(this).val();
             });
+        }
 
-            $('#wonMessage').hide();
-            $('#igra').show();
+        function clickedCell(button, i, j, puzzle, current_state) {
+            for (let k = 0; k < puzzle.color.length; ++k) {
+                if (puzzle.A_row[k] - 1 === i && puzzle.A_col[k] - 1 === j ||
+                    puzzle.B_row[k] - 1 === i && puzzle.B_col[k] - 1 === j) {
+                    return;
+                }
+            }
+
+            if (button === 0) {
+                current_state.fields[i][j] = current_state.currentColor;
+            } else if (button === 2) {
+                current_state.fields[i][j] = 'lightgrey';
+            }
+
+            colorTable(puzzle, current_state);
+
+            if (hasWon(puzzle, current_state)) {
+                hideGame();
+            }
+
+            underlineDonePaths(puzzle, current_state);
+        }
+
+        function buildState(puzzle) {
+            const current_state = {
+                fields: [],
+                currentColor: puzzle.color[0],
+            };
+
+            for (let i = 0; i < puzzle.size; ++i) {
+                current_state.fields[i] = [];
+                for (let j = 0; j < puzzle.size; ++j) {
+                    current_state.fields[i][j] = "lightgrey";
+                }
+            }
+
+            for (let i = 0; i < puzzle.color.length; ++i) {
+                current_state.fields[puzzle.A_row[i] - 1][puzzle.A_col[i] - 1] = puzzle.color[i];
+                current_state.fields[puzzle.B_row[i] - 1][puzzle.B_col[i] - 1] = puzzle.color[i];
+            }
+
+            return current_state;
         }
 
         function resetTable(puzzle) {
@@ -145,31 +188,28 @@
             }
         }
 
-        function clickedCell(button, i, j, puzzle, current_state) {
+        function hasWon(puzzle, current_state) {
+            let win = true;
             for (let k = 0; k < puzzle.color.length; ++k) {
-                if (puzzle.A_row[k] - 1 === i && puzzle.A_col[k] - 1 === j ||
-                    puzzle.B_row[k] - 1 === i && puzzle.B_col[k] - 1 === j) {
-                    return;
-                }
+                win = win && hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
+                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state);
             }
-
-            if (button === 0) {
-                current_state.fields[i][j] = current_state.currentColor;
-            } else if (button === 2) {
-                current_state.fields[i][j] = 'lightgrey';
-            }
-
-            colorTable(puzzle, current_state);
-
-            if (hasWon(puzzle, current_state)) {
-                handleWin();
-            }
-            underlineDonePaths(puzzle, current_state);
+            return win;
         }
 
-        function handleWin() {
-            $('#igra').hide();
-            $('#wonMessage').show();
+        function underlineDonePaths(puzzle, current_state) {
+            for (let k = 0; k < puzzle.color.length; ++k) {
+                if (hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
+                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state)) {
+                    $(`#boja-${puzzle.color[k]}-label`).css({
+                        'text-decoration': 'underline',
+                    });
+                } else {
+                    $(`#boja-${puzzle.color[k]}-label`).css({
+                        'text-decoration': 'none',
+                    });
+                }
+            }
         }
 
         function hasPath(i1, j1, i2, j2, current_state) {
@@ -213,55 +253,20 @@
             return false;
         }
 
-        function hasWon(puzzle, current_state) {
-            let win = true;
-            for (let k = 0; k < puzzle.color.length; ++k) {
-                win = win && hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
-                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state);
-            }
-            return win;
-        }
-
-        function underlineDonePaths(puzzle, current_state) {
-            for (let k = 0; k < puzzle.color.length; ++k) {
-                if (hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
-                    puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state)) {
-                    $(`#boja-${puzzle.color[k]}-label`).css({
-                        'text-decoration': 'underline',
-                    });
-                } else {
-                    $(`#boja-${puzzle.color[k]}-label`).css({
-                        'text-decoration': 'none',
-                    });
-                }
-            }
-        }
-
-        function buildState(puzzle) {
-            const current_state = {
-                fields: [],
-                currentColor: puzzle.color[0],
-            };
-
-            for (let i = 0; i < puzzle.size; ++i) {
-                current_state.fields[i] = [];
-                for (let j = 0; j < puzzle.size; ++j) {
-                    current_state.fields[i][j] = "lightgrey";
-                }
-            }
-
-            for (let i = 0; i < puzzle.color.length; ++i) {
-                current_state.fields[puzzle.A_row[i] - 1][puzzle.A_col[i] - 1] = puzzle.color[i];
-                current_state.fields[puzzle.B_row[i] - 1][puzzle.B_col[i] - 1] = puzzle.color[i];
-            }
-
-            return current_state;
-        }
-
         function getCellId(i, j) {
             return `cell-${i}-${j}`;
         }
-</script>
+
+        function hideGame() {
+            $('#igra').hide();
+            $('#wonMessage').show();
+        }
+
+        function showGame() {
+            $('#wonMessage').hide();
+            $('#igra').show();
+        }
+    </script>
 
 </body>
 
