@@ -61,10 +61,10 @@
             table.empty();
 
             for (let i = 0; i < puzzle.size; ++i) {
-                let row = $('<tr>');
+                const row = $('<tr>');
                 for (let j = 0; j < puzzle.size; ++j) {
-                    let id = getCellId(i, j);
-                    let cell = $('<td>')
+                    const id = getCellId(i, j);
+                    const cell = $('<td>')
                         .data('i', i).data('j', j).prop({ id: id });
                     for (let k = 0; k < puzzle.color.length; ++k) {
                         if (puzzle.A_row[k] - 1 === i && puzzle.A_col[k] - 1 === j ||
@@ -81,17 +81,18 @@
         function resetColorSelector(colors, current_color) {
             $('#odabirBoje').empty();
             for (let value of colors) {
+                const id = `boja-${value}`;
                 $('#odabirBoje').append(
                     $('<input>').prop({
                         type: 'radio',
                         name: 'boja',
-                        id: `boja-${value}`,
+                        id: id,
                         value: value,
                         checked: value === current_color,
                     })
                 ).append(
                     $('<label>').prop({
-                        for: value,
+                        for: id,
                         id: `boja-${value}-label`,
                     }).html(value)
                 )
@@ -185,7 +186,6 @@
         }
 
         function underlineDonePaths(puzzle, current_state) {
-            let win = true;
             for (let k = 0; k < puzzle.color.length; ++k) {
                 if (hasPath(puzzle.A_row[k] - 1, puzzle.A_col[k] - 1,
                     puzzle.B_row[k] - 1, puzzle.B_col[k] - 1, current_state)) {
@@ -198,7 +198,6 @@
                     });
                 }
             }
-            return win;
         }
 
         function buildState(puzzle) {
